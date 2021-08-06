@@ -7,8 +7,10 @@
 #include <cassert>
 #include <omp.h>
 #include <cuda_runtime.h>
+#include "device_launch_parameters.h"
 #include <cuda.h>
 #include <atomic>
+
 using namespace std;
 
 #ifndef NV
@@ -182,17 +184,21 @@ __global__ void kernel(int *sharedInteger)
 }
 
 
+
 int atomicCAS(int* atarr,int old_val,int new_val);
 
 void nbrscan_atomic(Dummy* d)
 {
-  const int n_ = d->get_n();
-  const int m_ = d->get_m();
-  int* atarr[n_]; 
-    //= new int[n_];
+  const long n_ = d->get_n();
+  const long m_ = d->get_m();
+  int* atarr;
+    //[n_]; 
   //int old_val=10;
   //int new_val=100;
   int p = 20;
+  atarr = (int*)malloc(n_*sizeof(int));
+  //cudaMalloc (&atarr, n_*sizeof(int));
+  //cudaMemcpy(atarr, n_*sizeof(int), cudaMemcpyHostToDevice);
 
 #ifdef USE_OMP_ACCELERATOR
 #pragma omp target teams distribute parallel for \
@@ -214,7 +220,11 @@ void nbrscan_atomic(Dummy* d)
     }
   }
     std::cout <<"---value update-----" << atarr[n_-1] <<endl;
+
+  //cudaMemcpy(atarr, n_*sizeof(int), cudaMemcpyDeviceToHost);
+  free(atarr);
 }
+
 
 
 int main(int argc, char *argv[])
